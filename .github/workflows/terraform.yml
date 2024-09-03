@@ -50,14 +50,15 @@ jobs:
           git push origin terraform-plan-branch
 
       - name: Create Pull Request
+        uses: octokit/request-action@v2
+        with:
+          route: POST /repos/${{ github.repository }}/pulls
+          title: "Terraform Plan Output"
+          body: "This PR includes the Terraform plan output. Please review the changes."
+          head: terraform-plan-branch
+          base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d '{"title":"Terraform Plan Output","body":"This PR includes the Terraform plan output. Please review the changes.","head":"terraform-plan-branch","base":"main"}' \
-            https://api.github.com/repos/${{ github.repository }}/pulls
 
   merge:
     runs-on: ubuntu-latest
@@ -65,11 +66,10 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'review_requested'
     steps:
       - name: Merge Pull Request
+        uses: octokit/request-action@v2
+        with:
+          route: PUT /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge
+          commit_title: "Merging Terraform Plan PR"
+          merge_method: "merge"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -X PUT \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d '{"commit_title":"Merging Terraform Plan PR","merge_method":"merge"}' \
-            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge
