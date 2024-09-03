@@ -53,11 +53,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create \
-            --title "Terraform Plan Output" \
-            --body "This PR includes the Terraform plan output. Please review the changes." \
-            --base main \
-            --head terraform-plan-branch
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"title":"Terraform Plan Output","body":"This PR includes the Terraform plan output. Please review the changes.","head":"terraform-plan-branch","base":"main"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls
 
   merge:
     runs-on: ubuntu-latest
@@ -65,15 +65,11 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'review_requested'
     steps:
       - name: Merge Pull Request
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const pr = github.context.payload.pull_request;
-            if (pr) {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                merge_method: 'merge' // or 'squash', 'rebase'
-              });
-            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X PUT \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"commit_title":"Merging Terraform Plan PR","merge_method":"merge"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge
