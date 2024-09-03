@@ -31,16 +31,21 @@ jobs:
         id: terraform_plan
         run: terraform plan -out=terraform.tfplan
 
+      - name: Create a new branch and commit Terraform Plan
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -b terraform-plan-branch
+          git add terraform.tfplan
+          git commit -m "Add Terraform plan"
+          git push origin terraform-plan-branch
+
       - name: Create Pull Request
-        if: success()  # Create PR only if Terraform Plan succeeded
-        uses: octokit/request-action@v2
-        with:
-          route: POST /repos/${{ github.repository }}/pulls
-          title: "Terraform Plan Output"
-          body: "This PR includes the Terraform plan output. Please review the changes."
-          head: terraform-plan-branch
-          base: branch2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
+        run: |
+          gh pr create \
+            --title "Terraform Plan Output" \
+            --body "This PR includes the Terraform plan output. Please review the changes." \
+            --base branch2 \
+            --head terraform-plan-branch
