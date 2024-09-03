@@ -40,16 +40,22 @@ jobs:
           name: terraform-plan
           path: terraform.tfplan
 
-      - name: Create Pull Request for Terraform Plan
-        id: create_pr
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Terraform Plan Output"
-          body: "This PR includes the Terraform plan output. Please review the changes."
-          base: main
-          branch: terraform-plan-branch
-          files: terraform.tfplan
+      - name: Create New Branch for PR
+        run: |
+          git checkout -b terraform-plan-branch
+          git add terraform.tfplan
+          git commit -m "Add Terraform plan"
+          git push origin terraform-plan-branch
+
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"title":"Terraform Plan Output","body":"This PR includes the Terraform plan output. Please review the changes.","head":"terraform-plan-branch","base":"main"}' \
+            https://api.github.com/repos/${{ github.repository }}/pulls
 
   review:
     runs-on: ubuntu-latest
